@@ -1,5 +1,10 @@
-name: Coverbot
-description: Parse json code coverage file
+name: Coverbot | Code Coverage
+description: Quickly determine code coverage.
+
+branding: 
+  icon: check-circle
+  color: blue
+
 inputs:
   file: 
     description: location of json file
