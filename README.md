@@ -1,1 +1,1 @@
-# parse-coverage-action
+# Coverbot
