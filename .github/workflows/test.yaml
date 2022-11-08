@@ -1,0 +1,24 @@
+name: Test
+on: push
+
+permissions:
+  contents: read
+  statuses: write
+  
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    name: parse
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Parse
+        id: parse
+        uses: coverbot-io/parse-coverage-action@setup
+        with:
+          file: cover/excoveralls.json
+          coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get the output percentage
+        run: echo "The percentage was ${{ steps.parse.outputs.percentage }}"

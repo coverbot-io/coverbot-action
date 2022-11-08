@@ -1,0 +1,22 @@
+name: Parse Coverage
+description: Parse json code coverage file
+inputs:
+  file: 
+    description: location of json file
+    required: true
+  coverbot_api_key: 
+    description: Coverbot Token
+    required: true
+  github_token: 
+    description: GitHub Token
+    required: true
+outputs:
+  covered: 
+    description: Number of lines covered
+  relevant: 
+    description: Number of lines considered relevant
+  percentage: 
+    description: The coverage percentage
+runs:
+  using: 'node16'
+  main: 'index.js'
