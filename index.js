@@ -34,7 +34,7 @@ try {
     covered,
     relevant,
     percentage,
-    ref: github.context.payload.ref,
+    ref: github.context.ref || github.context.payload.ref,
     sha: github.context.sha,
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
