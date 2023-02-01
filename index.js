@@ -30,7 +30,7 @@ try {
     .times(100)
     .toFixed(2);
 
-  const sha = github.context.eventName == "pull_request" ? github.context.payload.after : github.context.sha
+  const sha = github.context.eventName == "pull_request" ? github.context.payload.pull_request.base.sha : github.context.sha
 
   const payload = {
     covered,
@@ -40,7 +40,8 @@ try {
     sha: sha,
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
-    default_branch: github.context.payload.repository.default_branch
+    default_branch: github.context.payload.repository.default_branch,
+    context: github.context
   };
 
   const http = new HttpClient("coverbot-io/coverage-action", [], {
