@@ -30,14 +30,10 @@ try {
     .times(100)
     .toFixed(2);
 
-  const sha = github.context.eventName == "pull_request" ? github.context.payload.pull_request.base.sha : github.context.sha
-
   const payload = {
     covered,
     relevant,
     percentage,
-    ref: github.context.ref || github.context.payload.ref,
-    sha: sha,
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
     default_branch: github.context.payload.repository.default_branch,
@@ -58,7 +54,7 @@ try {
 
   octokit.rest.repos.createCommitStatus({
     ...github.context.repo,
-    sha: sha,
+    sha: res.result.sha,
     state: res.result.state,
     context: "coverbot",
     description: res.result.message,
