@@ -6,10 +6,10 @@ import Decimal from "decimal.js-light"
 import fs from "fs"
 
 const parse = (data, changedFiles) => {
-  const { covered, coveredForPatch, relevant, relevantForPatch } = data.source_files.reduce(
+  const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = data.source_files.reduce(
     (acc, file) => {
       const sourceLines = file.source.split("\n").map((code, i) => {
-        return { code, coverage: file.coverage[i] }
+        return { code, coverage: file.coverage[i], lineNumber: i + 1 }
       })
 
       const relevant = sourceLines.filter(l => l.coverage !== null)
@@ -20,14 +20,25 @@ const parse = (data, changedFiles) => {
       const covered = relevant.filter(l => l.coverage > 0)
       const coveredForPatch = relevantForPatch.filter(l => l.coverage > 0)
 
+      const annotations = relevantForPatch.map(line => {
+        return {
+          path: file.name,
+          start_line: line.lineNumber,
+          end_line: line.lineNumber,
+          annotation_level: "warning",
+          message: "Line is not covered by tests."
+        }
+      })
+
       return {
         covered: covered.length + acc.covered,
         coveredForPatch: coveredForPatch.length + acc.coveredForPatch,
         relevant: relevant.length + acc.relevant,
         relevantForPatch: relevantForPatch.length + acc.relevantForPatch,
+        annotations: annotations.concat(acc.annotations)
       }
     },
-    { covered: 0, coveredForPatch: 0, relevant: 0, relevantForPatch: 0 }
+    { covered: 0, coveredForPatch: 0, relevant: 0, relevantForPatch: 0, annotations: [] }
   )
 
   const percentage = new Decimal(covered).dividedBy(new Decimal(relevant)).times(100).toFixed(2)
@@ -40,6 +51,7 @@ const parse = (data, changedFiles) => {
     relevantForPatch,
     percentage,
     patchPercentage,
+    annotations
   }
 }
 
@@ -81,7 +93,7 @@ try {
   // changedFiles on currently supported for PRs
   const changedFiles = github.context.eventName == "pull_request" ? await getChangedFiles(octokit) : {}
 
-  const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage } = parse(
+  const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = parse(
     decodedData,
     changedFiles
   )
@@ -113,7 +125,37 @@ try {
     description: res.result.message,
   })
 
-  if (github.context.eventName == "pull_request" && relevantForPatch > 0)
+  if (github.context.eventName == "pull_request" && relevantForPatch > 0) {
+    const { data: checkRun } = await octokit.rest.checks.create({
+      ...github.context.repo,
+      status: "in_progress",
+      name: "coverbot",
+      head_sha: res.result.sha
+    })
+
+    const chunkSize = 50
+
+    Array.from(
+      new Array(Math.ceil(annotations.length / chunkSize)),
+      (_, i) => annotations.slice(i * chunkSize, i * chunkSize + chunkSize)
+    ).forEach(chunk => {
+      octokit.rest.checks.update({
+        ...github.context.repo,
+        check_run_id: checkRun.id,
+        output: {
+          title: "coverbot coverage report",
+          summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
+          annotations: chunk
+        }
+      })
+    })
+
+    octokit.rest.checks.update({
+      ...github.context.repo,
+      check_run_id: checkRun.id,
+      conclusion: res.result.state
+    })
+
     octokit.rest.repos.createCommitStatus({
       ...github.context.repo,
       sha: res.result.sha,
@@ -121,6 +163,7 @@ try {
       context: "coverbot (patch)",
       description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
     })
+  }
 } catch (error) {
   core.setFailed(error.message)
 }
