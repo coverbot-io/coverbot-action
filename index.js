@@ -31,7 +31,7 @@ const parse = (data, changedFiles) => {
   )
 
   const percentage = new Decimal(covered).dividedBy(new Decimal(relevant)).times(100).toFixed(2)
-  const patchPercentage = new Decimal(coveredForPatch).dividedBy(new Decimal(relevantForPatch)).times(100).toFixed(2)
+  const patchPercentage = relevantForPatch > 0 ? new Decimal(coveredForPatch).dividedBy(new Decimal(relevantForPatch)).times(100).toFixed(2) : 0
 
   return {
     covered,
@@ -113,11 +113,11 @@ try {
     description: res.result.message,
   })
 
-  if (github.context.eventName == "pull_request")
+  if (github.context.eventName == "pull_request" && relevantForPatch > 0)
     octokit.rest.repos.createCommitStatus({
       ...github.context.repo,
       sha: res.result.sha,
-      state: "success",
+      state: coveredForPatch == relevantForPatch ? "success" : "failure",
       context: "coverbot (patch)",
       description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
     })
