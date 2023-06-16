@@ -26,7 +26,7 @@ const parse = (data, changedFiles) => {
           start_line: line.lineNumber,
           end_line: line.lineNumber,
           annotation_level: "warning",
-          message: "Line is not covered by tests."
+          message: "Line is not covered by tests.",
         }
       })
 
@@ -35,14 +35,23 @@ const parse = (data, changedFiles) => {
         coveredForPatch: coveredForPatch.length + acc.coveredForPatch,
         relevant: relevant.length + acc.relevant,
         relevantForPatch: relevantForPatch.length + acc.relevantForPatch,
-        annotations: annotations.concat(acc.annotations)
+        annotations: annotations.concat(acc.annotations),
       }
     },
-    { covered: 0, coveredForPatch: 0, relevant: 0, relevantForPatch: 0, annotations: [] }
+    {
+      covered: 0,
+      coveredForPatch: 0,
+      relevant: 0,
+      relevantForPatch: 0,
+      annotations: [],
+    }
   )
 
   const percentage = new Decimal(covered).dividedBy(new Decimal(relevant)).times(100).toFixed(2)
-  const patchPercentage = relevantForPatch > 0 ? new Decimal(coveredForPatch).dividedBy(new Decimal(relevantForPatch)).times(100).toFixed(2) : 0
+  const patchPercentage =
+    relevantForPatch > 0
+      ? new Decimal(coveredForPatch).dividedBy(new Decimal(relevantForPatch)).times(100).toFixed(2)
+      : 0
 
   return {
     covered,
@@ -51,7 +60,7 @@ const parse = (data, changedFiles) => {
     relevantForPatch,
     percentage,
     patchPercentage,
-    annotations
+    annotations,
   }
 }
 
@@ -62,25 +71,25 @@ const getChangedFiles = async octokit => {
     per_page: 100,
   })
 
-  return filesResponse.data.reduce(async (acc, file) => {
-    let patch
+  return filesResponse.data
+    .filter(file => file.status != "removed")
+    .reduce(async (acc, file) => {
+      let patch
 
-    if ("patch" in file) {
-      patch = file.patch
-    } else {
-      const fileContentResponse = await octokit.rest.repos.getContent({
-        ...github.context.repo,
-        path: file.filename,
-      })
+      if ("patch" in file) {
+        patch = file.patch
+      } else {
+        const fileContentResponse = await octokit.request(file.contents_url)
 
-      const encodedContent = fileContentResponse.data.content.split("\n").join("")
-      patch = atob(encodedContent)
-    }
+        const encodedContent = fileContentResponse.data.content.split("\n").join("")
 
-    const changedLines = patch.split("\n").filter(line => line.startsWith("+"))
+        patch = atob(encodedContent)
+      }
 
-    return { ...(await acc), [file.filename]: changedLines }
-  }, {})
+      const changedLines = patch.split("\n").filter(line => line.startsWith("+"))
+
+      return { ...(await acc), [file.filename]: changedLines }
+    }, {})
 }
 
 try {
@@ -130,14 +139,13 @@ try {
       ...github.context.repo,
       status: "in_progress",
       name: "coverbot",
-      head_sha: res.result.sha
+      head_sha: res.result.sha,
     })
 
     const chunkSize = 50
 
-    Array.from(
-      new Array(Math.ceil(annotations.length / chunkSize)),
-      (_, i) => annotations.slice(i * chunkSize, i * chunkSize + chunkSize)
+    Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) =>
+      annotations.slice(i * chunkSize, i * chunkSize + chunkSize)
     ).forEach(chunk => {
       octokit.rest.checks.update({
         ...github.context.repo,
@@ -145,15 +153,15 @@ try {
         output: {
           title: "coverbot coverage report",
           summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
-          annotations: chunk
-        }
+          annotations: chunk,
+        },
       })
     })
 
     octokit.rest.checks.update({
       ...github.context.repo,
       check_run_id: checkRun.id,
-      conclusion: res.result.state
+      conclusion: res.result.state,
     })
 
     octokit.rest.repos.createCommitStatus({
