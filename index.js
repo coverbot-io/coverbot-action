@@ -20,15 +20,17 @@ const parse = (data, changedFiles) => {
       const covered = relevant.filter(l => l.coverage > 0)
       const coveredForPatch = relevantForPatch.filter(l => l.coverage > 0)
 
-      const annotations = relevantForPatch.map(line => {
-        return {
-          path: file.name,
-          start_line: line.lineNumber,
-          end_line: line.lineNumber,
-          annotation_level: "warning",
-          message: "Line is not covered by tests.",
-        }
-      })
+      const annotations = relevantForPatch
+        .filter(l => l.coverage === 0)
+        .map(line => {
+          return {
+            path: file.name,
+            start_line: line.lineNumber,
+            end_line: line.lineNumber,
+            annotation_level: "warning",
+            message: "Line is not covered by tests.",
+          }
+        })
 
       return {
         covered: covered.length + acc.covered,
