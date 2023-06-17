@@ -65,13 +65,12 @@ const parse = (data, changedFiles) => {
 }
 
 const getChangedFiles = async octokit => {
-  const filesResponse = await octokit.rest.pulls.listFiles({
+  const changedFiles = await octokit.paginate(octokit.rest.pulls.listFiles, {
     ...github.context.repo,
     pull_number: github.context.payload.number,
-    per_page: 100,
   })
 
-  return filesResponse.data
+  return changedFiles
     .filter(file => file.status != "removed")
     .reduce(async (acc, file) => {
       let patch
