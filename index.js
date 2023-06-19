@@ -4,6 +4,9 @@ import { HttpClient } from "@actions/http-client"
 
 import Decimal from "decimal.js-light"
 import fs from "fs"
+import path from "path"
+
+const subdirectory = core.getInput("subdirectory") || ""
 
 const parse = (data, changedFiles) => {
   const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = data.source_files.reduce(
@@ -14,7 +17,10 @@ const parse = (data, changedFiles) => {
 
       const relevant = sourceLines.filter(l => l.coverage !== null)
       const relevantForPatch = relevant.filter(
-        line => file.name in changedFiles && changedFiles[file.name].includes(`+${line.code}`)
+        line => {
+          const fileName = path.join(subdirectory, file.name)
+          return fileName in changedFiles && changedFiles[fileName].includes(`+${line.code}`)
+        }
       )
 
       const covered = relevant.filter(l => l.coverage > 0)
@@ -24,7 +30,7 @@ const parse = (data, changedFiles) => {
         .filter(l => l.coverage === 0)
         .map(line => {
           return {
-            path: file.name,
+            path: path.join(subdirectory, file.name),
             start_line: line.lineNumber,
             end_line: line.lineNumber,
             annotation_level: "warning",

@@ -15,6 +15,9 @@ inputs:
   github_token: 
     description: GitHub Token
     required: true
+  subdirectory: 
+    description: If your app is in a subdirectory, specify it here
+    required: false
 outputs:
   covered: 
     description: Number of lines covered
