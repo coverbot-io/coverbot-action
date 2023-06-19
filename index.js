@@ -17,6 +17,8 @@ const parse = (data, changedFiles) => {
         line => file.name in changedFiles && changedFiles[file.name].includes(`+${line.code}`)
       )
 
+      console.log(file.name, relevant)
+
       const covered = relevant.filter(l => l.coverage > 0)
       const coveredForPatch = relevantForPatch.filter(l => l.coverage > 0)
 
@@ -102,6 +104,7 @@ try {
 
   // changedFiles on currently supported for PRs
   const changedFiles = github.context.eventName == "pull_request" ? await getChangedFiles(octokit) : {}
+  console.log(changedFiles)
 
   const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = parse(
     decodedData,
