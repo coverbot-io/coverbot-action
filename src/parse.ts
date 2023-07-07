@@ -34,7 +34,7 @@ export const parse = (data: Data, changedFiles: ChangedFiles): Result => {
     (acc, file) => {
       const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles)
 
-     return {
+      return {
         covered: covered + acc.covered,
         coveredForPatch: coveredForPatch + acc.coveredForPatch,
         relevant: relevant + acc.relevant,
@@ -70,22 +70,20 @@ export const parse = (data: Data, changedFiles: ChangedFiles): Result => {
   }
 }
 
-const parseSourceFile = (sourceFile: SourceFile, changedFiles: ChangedFiles) => {
+const parseSourceFile = (sourceFile: SourceFile, changedFiles: ChangedFiles): ParseResult => {
   const sourceLines = sourceFile.source.split("\n").map((code, i) => {
     return { code, coverage: sourceFile.coverage[i], lineNumber: i + 1 }
   })
 
   const relevant = sourceLines.filter(l => l.coverage !== null)
-  const relevantForPatch = relevant.filter(
-    line => {
-      const fileName = path.join(subdirectory, sourceFile.name) as keyof ChangedFiles
-      const changedLines = changedFiles[fileName]
-      return fileName in changedFiles && changedLines.includes(`+${line.code}`)
-    }
-  )
+  const relevantForPatch = relevant.filter(line => {
+    const fileName = path.join(subdirectory, sourceFile.name)
+    const changedLines = changedFiles[fileName]
+    return fileName in changedFiles && changedLines.includes(`+${line.code}`)
+  })
 
-  const covered = relevant.filter(l => l.coverage! > 0)
-  const coveredForPatch = relevantForPatch.filter(l => l.coverage! > 0)
+  const covered = relevant.filter(l => l.coverage !== null && l.coverage > 0)
+  const coveredForPatch = relevantForPatch.filter(l => l.coverage !== null && l.coverage > 0)
 
   const annotations = relevantForPatch
     .filter(l => l.coverage === 0)
@@ -104,7 +102,6 @@ const parseSourceFile = (sourceFile: SourceFile, changedFiles: ChangedFiles) => 
     coveredForPatch: coveredForPatch.length,
     relevant: relevant.length,
     relevantForPatch: relevantForPatch.length,
-    annotations: annotations,
+    annotations,
   }
 }
-

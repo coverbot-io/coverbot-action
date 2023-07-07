@@ -1,10 +1,10 @@
-import * as core from '@actions/core'
+import * as core from "@actions/core"
 import github from "@actions/github"
 import { HttpClient } from "@actions/http-client"
 import fs from "fs"
-import { getChangedFiles } from './changed-files'
-import { parse } from './parse'
-import { TypedResponse } from '@actions/http-client/lib/interfaces'
+import { getChangedFiles } from "./changed-files"
+import { parse } from "./parse"
+import { TypedResponse } from "@actions/http-client/lib/interfaces"
 
 type CoverageResponse = {
   sha: string
@@ -21,7 +21,7 @@ async function run(): Promise<void> {
     const decodedData = JSON.parse(data)
 
     // changedFiles on currently supported for PRs
-    const changedFiles = github.context.eventName == "pull_request" ? await getChangedFiles(octokit) : {}
+    const changedFiles = github.context.eventName === "pull_request" ? await getChangedFiles(octokit) : {}
 
     const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = parse(
       decodedData,
@@ -47,48 +47,52 @@ async function run(): Promise<void> {
 
     const res: TypedResponse<CoverageResponse> = await http.postJson("https://api.coverbot.io/v1/coverage", payload)
 
+    if (!res.result) return core.setFailed("Failed to report coverage")
+
     octokit.rest.repos.createCommitStatus({
       ...github.context.repo,
-      sha: res.result!.sha,
-      state: res.result!.state,
+      sha: res.result.sha,
+      state: res.result.state,
       context: "coverbot",
-      description: res.result!.message,
+      description: res.result.message,
     })
 
-    if (github.context.eventName == "pull_request" && relevantForPatch > 0) {
+    if (github.context.eventName === "pull_request" && relevantForPatch > 0) {
       const { data: checkRun } = await octokit.rest.checks.create({
         ...github.context.repo,
         status: "in_progress",
         name: "coverbot",
-        head_sha: res.result!.sha,
+        head_sha: res.result.sha,
       })
 
       const chunkSize = 50
 
-      Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) =>
+      const annotationChunks = Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) =>
         annotations.slice(i * chunkSize, i * chunkSize + chunkSize)
-      ).forEach(chunk => {
+      )
+
+      for (const chunk of annotationChunks) {
         octokit.rest.checks.update({
           ...github.context.repo,
           check_run_id: checkRun.id,
           output: {
             title: "coverbot coverage report",
-            summary: `Overall: ${res.result!.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
+            summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
             annotations: chunk,
           },
         })
-      })
+      }
 
       octokit.rest.checks.update({
         ...github.context.repo,
         check_run_id: checkRun.id,
-        conclusion: res.result!.state,
+        conclusion: res.result.state,
       })
 
       octokit.rest.repos.createCommitStatus({
         ...github.context.repo,
-        sha: res.result!.sha,
-        state: coveredForPatch == relevantForPatch ? "success" : "failure",
+        sha: res.result.sha,
+        state: coveredForPatch === relevantForPatch ? "success" : "failure",
         context: "coverbot (patch)",
         description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
       })

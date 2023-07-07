@@ -1,18 +1,20 @@
 import github from "@actions/github"
 import { Octokit } from "@octokit/core"
-import { Api } from "@octokit/plugin-rest-endpoint-methods/dist-types/types"
+import type { Api } from "@octokit/plugin-rest-endpoint-methods/dist-types/types"
 import { PaginateInterface } from "@octokit/plugin-paginate-rest"
 
 export type ChangedFiles = Record<string, string[]>
 
-export const getChangedFiles = async (octokit: Octokit & Api & { paginate: PaginateInterface }) => {
+export const getChangedFiles = async (
+  octokit: Octokit & Api & { paginate: PaginateInterface }
+): Promise<ChangedFiles> => {
   const changedFiles = await octokit.paginate(octokit.rest.pulls.listFiles, {
     ...github.context.repo,
     pull_number: github.context.payload.number,
   })
 
   return changedFiles
-    .filter(file => file.status != "removed")
+    .filter(file => file.status !== "removed")
     .reduce(async (acc, file) => {
       let patch
 
