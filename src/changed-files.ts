@@ -1,4 +1,4 @@
-import github from "@actions/github"
+import * as github from "@actions/github"
 import { Octokit } from "@octokit/core"
 import type { Api } from "@octokit/plugin-rest-endpoint-methods/dist-types/types"
 import { PaginateInterface } from "@octokit/plugin-paginate-rest"

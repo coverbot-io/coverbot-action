@@ -1,4 +1,4 @@
-require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
+/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 7351:
@@ -11641,6 +11641,29 @@ function wrappy (fn, cb) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -11650,14 +11673,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getChangedFiles = void 0;
-const github_1 = __importDefault(__nccwpck_require__(5438));
+const github = __importStar(__nccwpck_require__(5438));
 const getChangedFiles = (octokit) => __awaiter(void 0, void 0, void 0, function* () {
-    const changedFiles = yield octokit.paginate(octokit.rest.pulls.listFiles, Object.assign(Object.assign({}, github_1.default.context.repo), { pull_number: github_1.default.context.payload.number }));
+    const changedFiles = yield octokit.paginate(octokit.rest.pulls.listFiles, Object.assign(Object.assign({}, github.context.repo), { pull_number: github.context.payload.number }));
     return changedFiles
         .filter(file => file.status !== "removed")
         .reduce((acc, file) => __awaiter(void 0, void 0, void 0, function* () {
@@ -11721,7 +11741,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const github_1 = __importDefault(__nccwpck_require__(5438));
+const github = __importStar(__nccwpck_require__(5438));
 const http_client_1 = __nccwpck_require__(6255);
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const changed_files_1 = __nccwpck_require__(9456);
@@ -11732,20 +11752,20 @@ function run() {
         try {
             const token = core.getInput("github_token");
             const subdirectory = core.getInput("subdirectory") || "";
-            const octokit = github_1.default.getOctokit(token);
+            const octokit = github.getOctokit(token);
             const data = fs_1.default.readFileSync(core.getInput("file"), "utf8");
             const decodedData = JSON.parse(data);
             // changedFiles on currently supported for PRs
-            const changedFiles = github_1.default.context.eventName === "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
+            const changedFiles = github.context.eventName === "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
             const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = (0, parse_1.parse)(decodedData, changedFiles, subdirectory);
             const payload = {
                 covered,
                 relevant,
                 percentage,
-                owner: github_1.default.context.repo.owner,
-                repo: github_1.default.context.repo.repo,
-                default_branch: (_a = github_1.default.context.payload.repository) === null || _a === void 0 ? void 0 : _a.default_branch,
-                context: github_1.default.context,
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                default_branch: (_a = github.context.payload.repository) === null || _a === void 0 ? void 0 : _a.default_branch,
+                context: github.context,
             };
             const http = new http_client_1.HttpClient("coverbot-io/coverage-action", [], {
                 headers: {
@@ -11756,20 +11776,20 @@ function run() {
             const res = yield http.postJson("https://api.coverbot.io/v1/coverage", payload);
             if (!res.result)
                 return core.setFailed("Failed to report coverage");
-            octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github_1.default.context.repo), { sha: res.result.sha, state: res.result.state, context: "coverbot", description: res.result.message }));
-            if (github_1.default.context.eventName === "pull_request" && relevantForPatch > 0) {
-                const { data: checkRun } = yield octokit.rest.checks.create(Object.assign(Object.assign({}, github_1.default.context.repo), { status: "in_progress", name: "coverbot", head_sha: res.result.sha }));
+            octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: res.result.state, context: "coverbot", description: res.result.message }));
+            if (github.context.eventName === "pull_request" && relevantForPatch > 0) {
+                const { data: checkRun } = yield octokit.rest.checks.create(Object.assign(Object.assign({}, github.context.repo), { status: "in_progress", name: "coverbot", head_sha: res.result.sha }));
                 const chunkSize = 50;
                 const annotationChunks = Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) => annotations.slice(i * chunkSize, i * chunkSize + chunkSize));
                 for (const chunk of annotationChunks) {
-                    octokit.rest.checks.update(Object.assign(Object.assign({}, github_1.default.context.repo), { check_run_id: checkRun.id, output: {
+                    octokit.rest.checks.update(Object.assign(Object.assign({}, github.context.repo), { check_run_id: checkRun.id, output: {
                             title: "coverbot coverage report",
                             summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
                             annotations: chunk,
                         } }));
                 }
-                octokit.rest.checks.update(Object.assign(Object.assign({}, github_1.default.context.repo), { check_run_id: checkRun.id, conclusion: res.result.state }));
-                octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github_1.default.context.repo), { sha: res.result.sha, state: coveredForPatch === relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
+                octokit.rest.checks.update(Object.assign(Object.assign({}, github.context.repo), { check_run_id: checkRun.id, conclusion: res.result.state }));
+                octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: coveredForPatch === relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
             }
         }
         catch (error) {
@@ -12046,4 +12066,3 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	
 /******/ })()
 ;
-//# sourceMappingURL=index.js.map

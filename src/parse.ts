@@ -1,4 +1,4 @@
-import core, { AnnotationProperties } from "@actions/core"
+import { AnnotationProperties } from "@actions/core"
 
 import Decimal from "decimal.js-light"
 import path from "path"
@@ -30,7 +30,11 @@ type Result = ParseResult & {
 export const parse = (data: Data, changedFiles: ChangedFiles, subdirectory: string): Result => {
   const parseResult: ParseResult = data.source_files.reduce(
     (acc, file) => {
-      const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles, subdirectory)
+      const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(
+        file,
+        changedFiles,
+        subdirectory
+      )
 
       return {
         covered: covered + acc.covered,
