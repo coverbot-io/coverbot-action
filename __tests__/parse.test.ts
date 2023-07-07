@@ -5,7 +5,11 @@ import { expect, test } from "@jest/globals"
 test("parse", async () => {
   const data = fs.readFileSync("./example_coverage_files/excoveralls.json", "utf8")
   const decodedData = JSON.parse(data)
-  const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage } = parse(decodedData, {}, "")
+  const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage } = parse(
+    decodedData,
+    {},
+    ""
+  )
   expect(covered).toBe(391)
   expect(coveredForPatch).toBe(0)
   expect(relevant).toBe(687)
