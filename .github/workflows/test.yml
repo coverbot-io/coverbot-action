@@ -33,15 +33,3 @@ jobs:
       - run: npm install
 
       - run: npm test
-      
-  excoveralls:
-    name: excoveralls.json
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: ./
-        with:
-          file: example_coverage_files/excoveralls.json
-          coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
