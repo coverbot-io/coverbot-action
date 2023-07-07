@@ -15,6 +15,8 @@ type CoverageResponse = {
 async function run(): Promise<void> {
   try {
     const token = core.getInput("github_token")
+    const subdirectory = core.getInput("subdirectory") || ""
+
     const octokit = github.getOctokit(token)
 
     const data = fs.readFileSync(core.getInput("file"), "utf8")
@@ -25,7 +27,8 @@ async function run(): Promise<void> {
 
     const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = parse(
       decodedData,
-      changedFiles
+      changedFiles,
+      subdirectory
     )
 
     const payload = {

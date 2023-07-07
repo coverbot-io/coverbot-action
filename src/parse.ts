@@ -4,8 +4,6 @@ import Decimal from "decimal.js-light"
 import path from "path"
 import { ChangedFiles } from "./changed-files"
 
-const subdirectory = core.getInput("subdirectory") || ""
-
 type SourceFile = {
   coverage: (number | null)[]
   name: string
@@ -29,10 +27,10 @@ type Result = ParseResult & {
   patchPercentage: string
 }
 
-export const parse = (data: Data, changedFiles: ChangedFiles): Result => {
+export const parse = (data: Data, changedFiles: ChangedFiles, subdirectory: string): Result => {
   const parseResult: ParseResult = data.source_files.reduce(
     (acc, file) => {
-      const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles)
+      const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles, subdirectory)
 
       return {
         covered: covered + acc.covered,
@@ -70,7 +68,7 @@ export const parse = (data: Data, changedFiles: ChangedFiles): Result => {
   }
 }
 
-const parseSourceFile = (sourceFile: SourceFile, changedFiles: ChangedFiles): ParseResult => {
+const parseSourceFile = (sourceFile: SourceFile, changedFiles: ChangedFiles, subdirectory: string): ParseResult => {
   const sourceLines = sourceFile.source.split("\n").map((code, i) => {
     return { code, coverage: sourceFile.coverage[i], lineNumber: i + 1 }
   })

@@ -11731,12 +11731,13 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput("github_token");
+            const subdirectory = core.getInput("subdirectory") || "";
             const octokit = github_1.default.getOctokit(token);
             const data = fs_1.default.readFileSync(core.getInput("file"), "utf8");
             const decodedData = JSON.parse(data);
             // changedFiles on currently supported for PRs
             const changedFiles = github_1.default.context.eventName === "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
-            const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = (0, parse_1.parse)(decodedData, changedFiles);
+            const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = (0, parse_1.parse)(decodedData, changedFiles, subdirectory);
             const payload = {
                 covered,
                 relevant,
@@ -11792,13 +11793,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parse = void 0;
-const core_1 = __importDefault(__nccwpck_require__(2186));
 const decimal_js_light_1 = __importDefault(__nccwpck_require__(5078));
 const path_1 = __importDefault(__nccwpck_require__(1017));
-const subdirectory = core_1.default.getInput("subdirectory") || "";
-const parse = (data, changedFiles) => {
+const parse = (data, changedFiles, subdirectory) => {
     const parseResult = data.source_files.reduce((acc, file) => {
-        const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles);
+        const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles, subdirectory);
         return {
             covered: covered + acc.covered,
             coveredForPatch: coveredForPatch + acc.coveredForPatch,
@@ -11829,7 +11828,7 @@ const parse = (data, changedFiles) => {
     };
 };
 exports.parse = parse;
-const parseSourceFile = (sourceFile, changedFiles) => {
+const parseSourceFile = (sourceFile, changedFiles, subdirectory) => {
     const sourceLines = sourceFile.source.split("\n").map((code, i) => {
         return { code, coverage: sourceFile.coverage[i], lineNumber: i + 1 };
     });
