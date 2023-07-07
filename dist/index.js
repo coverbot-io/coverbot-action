@@ -11659,7 +11659,7 @@ const github_1 = __importDefault(__nccwpck_require__(5438));
 const getChangedFiles = (octokit) => __awaiter(void 0, void 0, void 0, function* () {
     const changedFiles = yield octokit.paginate(octokit.rest.pulls.listFiles, Object.assign(Object.assign({}, github_1.default.context.repo), { pull_number: github_1.default.context.payload.number }));
     return changedFiles
-        .filter(file => file.status != "removed")
+        .filter(file => file.status !== "removed")
         .reduce((acc, file) => __awaiter(void 0, void 0, void 0, function* () {
         let patch;
         if ("patch" in file && file.patch) {
@@ -11735,7 +11735,7 @@ function run() {
             const data = fs_1.default.readFileSync(core.getInput("file"), "utf8");
             const decodedData = JSON.parse(data);
             // changedFiles on currently supported for PRs
-            const changedFiles = github_1.default.context.eventName == "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
+            const changedFiles = github_1.default.context.eventName === "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
             const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = (0, parse_1.parse)(decodedData, changedFiles);
             const payload = {
                 covered,
@@ -11753,19 +11753,22 @@ function run() {
                 },
             });
             const res = yield http.postJson("https://api.coverbot.io/v1/coverage", payload);
+            if (!res.result)
+                return core.setFailed("Failed to report coverage");
             octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github_1.default.context.repo), { sha: res.result.sha, state: res.result.state, context: "coverbot", description: res.result.message }));
-            if (github_1.default.context.eventName == "pull_request" && relevantForPatch > 0) {
+            if (github_1.default.context.eventName === "pull_request" && relevantForPatch > 0) {
                 const { data: checkRun } = yield octokit.rest.checks.create(Object.assign(Object.assign({}, github_1.default.context.repo), { status: "in_progress", name: "coverbot", head_sha: res.result.sha }));
                 const chunkSize = 50;
-                Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) => annotations.slice(i * chunkSize, i * chunkSize + chunkSize)).forEach(chunk => {
+                const annotationChunks = Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) => annotations.slice(i * chunkSize, i * chunkSize + chunkSize));
+                for (const chunk of annotationChunks) {
                     octokit.rest.checks.update(Object.assign(Object.assign({}, github_1.default.context.repo), { check_run_id: checkRun.id, output: {
                             title: "coverbot coverage report",
                             summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
                             annotations: chunk,
                         } }));
-                });
+                }
                 octokit.rest.checks.update(Object.assign(Object.assign({}, github_1.default.context.repo), { check_run_id: checkRun.id, conclusion: res.result.state }));
-                octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github_1.default.context.repo), { sha: res.result.sha, state: coveredForPatch == relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
+                octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github_1.default.context.repo), { sha: res.result.sha, state: coveredForPatch === relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
             }
         }
         catch (error) {
@@ -11836,8 +11839,8 @@ const parseSourceFile = (sourceFile, changedFiles) => {
         const changedLines = changedFiles[fileName];
         return fileName in changedFiles && changedLines.includes(`+${line.code}`);
     });
-    const covered = relevant.filter(l => l.coverage > 0);
-    const coveredForPatch = relevantForPatch.filter(l => l.coverage > 0);
+    const covered = relevant.filter(l => l.coverage !== null && l.coverage > 0);
+    const coveredForPatch = relevantForPatch.filter(l => l.coverage !== null && l.coverage > 0);
     const annotations = relevantForPatch
         .filter(l => l.coverage === 0)
         .map(line => {
@@ -11854,7 +11857,7 @@ const parseSourceFile = (sourceFile, changedFiles) => {
         coveredForPatch: coveredForPatch.length,
         relevant: relevant.length,
         relevantForPatch: relevantForPatch.length,
-        annotations: annotations,
+        annotations,
     };
 };
 
