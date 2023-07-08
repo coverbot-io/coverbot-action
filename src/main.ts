@@ -1,10 +1,9 @@
 import * as core from "@actions/core"
 import * as github from "@actions/github"
 import { HttpClient } from "@actions/http-client"
-import fs from "fs"
 import { getChangedFiles } from "./changed-files"
-import { parse } from "./parse"
 import { TypedResponse } from "@actions/http-client/lib/interfaces"
+import { parse } from "./parse"
 
 type CoverageResponse = {
   sha: string
@@ -15,21 +14,17 @@ type CoverageResponse = {
 async function run(): Promise<void> {
   try {
     const token = core.getInput("github_token")
+    const format = core.getInput("format")
+    const file = core.getInput("file")
     const subdirectory = core.getInput("subdirectory") || ""
 
     const octokit = github.getOctokit(token)
 
-    const data = fs.readFileSync(core.getInput("file"), "utf8")
-    const decodedData = JSON.parse(data)
-
-    // changedFiles on currently supported for PRs
+    // changedFiles only currently supported for PRs
     const changedFiles = github.context.eventName === "pull_request" ? await getChangedFiles(octokit) : {}
 
-    const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = parse(
-      decodedData,
-      changedFiles,
-      subdirectory
-    )
+    const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } =
+      await parse(format, file, changedFiles, subdirectory)
 
     const payload = {
       covered,

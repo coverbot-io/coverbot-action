@@ -6,6 +6,9 @@ branding:
   color: blue
 
 inputs:
+  format: 
+    description: file format (currently only `elixir` and `go` are supported)
+    required: true
   file: 
     description: location of json file
     required: true
