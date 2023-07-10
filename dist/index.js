@@ -11736,14 +11736,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const http_client_1 = __nccwpck_require__(6255);
-const fs_1 = __importDefault(__nccwpck_require__(7147));
 const changed_files_1 = __nccwpck_require__(9456);
 const parse_1 = __nccwpck_require__(6089);
 function run() {
@@ -11751,13 +11747,13 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput("github_token");
+            const format = core.getInput("format");
+            const file = core.getInput("file");
             const subdirectory = core.getInput("subdirectory") || "";
             const octokit = github.getOctokit(token);
-            const data = fs_1.default.readFileSync(core.getInput("file"), "utf8");
-            const decodedData = JSON.parse(data);
-            // changedFiles on currently supported for PRs
+            // changedFiles only currently supported for PRs
             const changedFiles = github.context.eventName === "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
-            const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = (0, parse_1.parse)(decodedData, changedFiles, subdirectory);
+            const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = yield (0, parse_1.parse)(format, file, changedFiles, subdirectory);
             const payload = {
                 covered,
                 relevant,
@@ -11777,19 +11773,21 @@ function run() {
             if (!res.result)
                 return core.setFailed("Failed to report coverage");
             octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: res.result.state, context: "coverbot", description: res.result.message }));
-            if (github.context.eventName === "pull_request" && relevantForPatch > 0) {
+            if (annotations.length > 0 || (relevantForPatch && relevantForPatch > 0)) {
                 const { data: checkRun } = yield octokit.rest.checks.create(Object.assign(Object.assign({}, github.context.repo), { status: "in_progress", name: "coverbot", head_sha: res.result.sha }));
                 const chunkSize = 50;
                 const annotationChunks = Array.from(new Array(Math.ceil(annotations.length / chunkSize)), (_, i) => annotations.slice(i * chunkSize, i * chunkSize + chunkSize));
                 for (const chunk of annotationChunks) {
                     octokit.rest.checks.update(Object.assign(Object.assign({}, github.context.repo), { check_run_id: checkRun.id, output: {
                             title: "coverbot coverage report",
-                            summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
+                            summary: `Overall: ${res.result.message}`,
                             annotations: chunk,
                         } }));
                 }
                 octokit.rest.checks.update(Object.assign(Object.assign({}, github.context.repo), { check_run_id: checkRun.id, conclusion: res.result.state }));
-                octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: coveredForPatch === relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
+                if (relevantForPatch && relevantForPatch > 0) {
+                    octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: coveredForPatch === relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
+                }
             }
         }
         catch (error) {
@@ -11808,15 +11806,79 @@ run();
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parse = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const parse = (format, file, changedFiles, subdirectory) => {
+    let parseFunction;
+    console.log(format);
+    switch (format) {
+        case "elixir":
+            parseFunction = (__nccwpck_require__(2305).parse);
+            break;
+        case "go":
+            parseFunction = (__nccwpck_require__(6962).parse);
+            break;
+        default:
+            core.setFailed("Unsupported format: " + format);
+            return Promise.reject();
+    }
+    return parseFunction(file, changedFiles, subdirectory);
+};
+exports.parse = parse;
+
+
+/***/ }),
+
+/***/ 2305:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parse = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(7147));
 const decimal_js_light_1 = __importDefault(__nccwpck_require__(5078));
 const path_1 = __importDefault(__nccwpck_require__(1017));
-const parse = (data, changedFiles, subdirectory) => {
-    const parseResult = data.source_files.reduce((acc, file) => {
+const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = fs_1.default.readFileSync(coverageFile, "utf8");
+    const decodedData = JSON.parse(data);
+    const parseResult = decodedData.source_files.reduce((acc, file) => {
         const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles, subdirectory);
         return {
             covered: covered + acc.covered,
@@ -11846,7 +11908,7 @@ const parse = (data, changedFiles, subdirectory) => {
         patchPercentage,
         annotations,
     };
-};
+});
 exports.parse = parse;
 const parseSourceFile = (sourceFile, changedFiles, subdirectory) => {
     const sourceLines = sourceFile.source.split("\n").map((code, i) => {
@@ -11879,6 +11941,119 @@ const parseSourceFile = (sourceFile, changedFiles, subdirectory) => {
         annotations,
     };
 };
+
+
+/***/ }),
+
+/***/ 6962:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parse = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const readline_1 = __importDefault(__nccwpck_require__(4521));
+const decimal_js_light_1 = __importDefault(__nccwpck_require__(5078));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, e_1, _b, _c;
+    const fileStream = fs_1.default.createReadStream(coverageFile);
+    const rl = readline_1.default.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity,
+    });
+    const lines = [];
+    try {
+        for (var _d = true, rl_1 = __asyncValues(rl), rl_1_1; rl_1_1 = yield rl_1.next(), _a = rl_1_1.done, !_a; _d = true) {
+            _c = rl_1_1.value;
+            _d = false;
+            const line = _c;
+            if (!line.startsWith("mode: ")) {
+                const [line_ref, statements, covered] = line.split(" ");
+                lines.push({
+                    line_ref,
+                    statements: parseInt(statements),
+                    covered: parseInt(covered),
+                });
+            }
+        }
+    }
+    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    finally {
+        try {
+            if (!_d && !_a && (_b = rl_1.return)) yield _b.call(rl_1);
+        }
+        finally { if (e_1) throw e_1.error; }
+    }
+    const parseResult = lines.reduce((acc, line) => {
+        const covered = line.covered > 0 ? line.statements : 0;
+        const relevant = line.statements;
+        const [sourceFile, lineRef] = line.line_ref.split(":");
+        const [start, end] = lineRef.split(",");
+        const fileName = path_1.default.join(subdirectory, sourceFile);
+        const coveredForPatch = fileName in changedFiles ? covered : 0;
+        const relevantForPatch = fileName in changedFiles ? relevant : 0;
+        const annotations = fileName in changedFiles && line.covered === 0
+            ? [
+                {
+                    path: path_1.default.join(subdirectory, sourceFile),
+                    start_line: parseInt(start),
+                    end_line: parseInt(end),
+                    annotation_level: "warning",
+                    message: "Line is not covered by tests.",
+                },
+            ]
+            : [];
+        return {
+            covered: covered + acc.covered,
+            relevant: relevant + acc.relevant,
+            coveredForPatch: coveredForPatch + acc.coveredForPatch,
+            relevantForPatch: relevantForPatch + acc.relevantForPatch,
+            annotations: annotations.concat(acc.annotations),
+        };
+    }, {
+        covered: 0,
+        relevant: 0,
+        coveredForPatch: 0,
+        relevantForPatch: 0,
+        annotations: [],
+    });
+    const { covered, relevant, coveredForPatch, relevantForPatch, annotations } = parseResult;
+    const percentage = new decimal_js_light_1.default(covered).dividedBy(new decimal_js_light_1.default(relevant)).times(100).toFixed(2);
+    const patchPercentage = relevantForPatch > 0
+        ? new decimal_js_light_1.default(coveredForPatch).dividedBy(new decimal_js_light_1.default(relevantForPatch)).times(100).toFixed(2)
+        : "0.00";
+    return {
+        covered,
+        relevant,
+        percentage,
+        coveredForPatch,
+        relevantForPatch,
+        patchPercentage,
+        annotations,
+    };
+});
+exports.parse = parse;
 
 
 /***/ }),
@@ -11968,6 +12143,14 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("punycode");
+
+/***/ }),
+
+/***/ 4521:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("readline");
 
 /***/ }),
 
