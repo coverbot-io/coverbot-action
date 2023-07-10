@@ -22,14 +22,16 @@ test("go", async () => {
   const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage } = await parse(
     "go",
     "./example_coverage_files/go.out",
-    {},
+    {
+      "terraform-provider-querydesk/internal/provider/provider.go": [],
+    },
     ""
   )
 
   expect(covered).toBe(123)
-  expect(coveredForPatch).toBe(123)
+  expect(coveredForPatch).toBe(29)
   expect(relevant).toBe(182)
-  expect(relevantForPatch).toBe(182)
+  expect(relevantForPatch).toBe(37)
   expect(percentage).toBe("67.58")
-  expect(patchPercentage).toBe("67.58")
+  expect(patchPercentage).toBe("78.38")
 })

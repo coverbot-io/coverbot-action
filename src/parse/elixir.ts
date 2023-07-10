@@ -16,8 +16,8 @@ type Data = {
   source_files: SourceFile[]
 }
 
-export const parse: Parse = async (file, changedFiles, subdirectory) => {
-  const data = fs.readFileSync(file, "utf8")
+export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => {
+  const data = fs.readFileSync(coverageFile, "utf8")
 
   const decodedData: Data = JSON.parse(data)
 

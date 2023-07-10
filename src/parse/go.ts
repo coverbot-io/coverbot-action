@@ -3,19 +3,18 @@ import fs from "fs"
 import readline from "readline"
 
 import Decimal from "decimal.js-light"
-import path from "path"
-import { ChangedFiles } from "../changed-files"
 import { Parse, ParseResult } from "../parse"
+import path from "path"
 
-export const parse: Parse = async (file, changedFiles, subdirectory) => {
-  const fileStream = fs.createReadStream(file)
+export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => {
+  const fileStream = fs.createReadStream(coverageFile)
 
   const rl = readline.createInterface({
     input: fileStream,
     crlfDelay: Infinity,
   })
 
-  let lines = []
+  const lines = []
 
   for await (const line of rl) {
     if (!line.startsWith("mode: ")) {
@@ -32,28 +31,46 @@ export const parse: Parse = async (file, changedFiles, subdirectory) => {
     (acc, line) => {
       const covered = line.covered > 0 ? line.statements : 0
       const relevant = line.statements
-      // TODO: figure out changed files
-      const coveredForPatch = covered
-      const relevantForPatch = relevant
+
+      const [sourceFile, lineRef] = line.line_ref.split(":")
+      const [start, end] = lineRef.split(",")
+
+      const fileName = path.join(subdirectory, sourceFile)
+
+      const coveredForPatch = fileName in changedFiles ? covered : 0
+      const relevantForPatch = fileName in changedFiles ? relevant : 0
+
+      const annotations =
+        fileName in changedFiles && line.covered === 0
+          ? [
+              {
+                path: path.join(subdirectory, sourceFile),
+                start_line: parseInt(start),
+                end_line: parseInt(end),
+                annotation_level: "warning",
+                message: "Line is not covered by tests.",
+              } as AnnotationProperties,
+            ]
+          : []
 
       return {
         covered: covered + acc.covered,
-        coveredForPatch: coveredForPatch + acc.coveredForPatch,
         relevant: relevant + acc.relevant,
+        coveredForPatch: coveredForPatch + acc.coveredForPatch,
         relevantForPatch: relevantForPatch + acc.relevantForPatch,
-        annotations: [],
+        annotations: annotations.concat(acc.annotations),
       } as ParseResult
     },
     {
       covered: 0,
-      coveredForPatch: 0,
       relevant: 0,
+      coveredForPatch: 0,
       relevantForPatch: 0,
       annotations: [],
     } as ParseResult
   )
 
-  const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseResult
+  const { covered, relevant, coveredForPatch, relevantForPatch, annotations } = parseResult
 
   const percentage = new Decimal(covered).dividedBy(new Decimal(relevant)).times(100).toFixed(2)
   const patchPercentage =
@@ -63,10 +80,10 @@ export const parse: Parse = async (file, changedFiles, subdirectory) => {
 
   return {
     covered,
-    coveredForPatch,
     relevant,
-    relevantForPatch,
     percentage,
+    coveredForPatch,
+    relevantForPatch,
     patchPercentage,
     annotations,
   }
