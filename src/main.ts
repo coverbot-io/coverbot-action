@@ -26,6 +26,10 @@ async function run(): Promise<void> {
     const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } =
       await parse(format, file, changedFiles, subdirectory)
 
+    core.setOutput("covered", covered);
+    core.setOutput("relevant", relevant);
+    core.setOutput("percentage", percentage);
+
     const payload = {
       covered,
       relevant,
