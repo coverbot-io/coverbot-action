@@ -11754,6 +11754,9 @@ function run() {
             // changedFiles only currently supported for PRs
             const changedFiles = github.context.eventName === "pull_request" ? yield (0, changed_files_1.getChangedFiles)(octokit) : {};
             const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = yield (0, parse_1.parse)(format, file, changedFiles, subdirectory);
+            core.setOutput("covered", covered);
+            core.setOutput("relevant", relevant);
+            core.setOutput("percentage", percentage);
             const payload = {
                 covered,
                 relevant,

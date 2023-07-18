@@ -52,6 +52,14 @@ jobs:
 
 -   `github_token`: (Required) Access from `${{ secrets.GITHUB_TOKEN }}`
 
+## Outputs
+
+-   `covered`: Number of lines covered.
+
+-   `relevant`: Number of lines considered relevant.
+
+-   `percentage`: The coverage percentage.
+
 ## Add the coverage badge to your README.md
 
 ```markdown
