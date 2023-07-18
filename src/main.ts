@@ -1,10 +1,9 @@
 import * as core from "@actions/core"
 import * as github from "@actions/github"
 import { HttpClient } from "@actions/http-client"
-import fs from "fs"
 import { getChangedFiles } from "./changed-files"
-import { parse } from "./parse"
 import { TypedResponse } from "@actions/http-client/lib/interfaces"
+import { parse } from "./parse"
 
 type CoverageResponse = {
   sha: string
@@ -15,21 +14,17 @@ type CoverageResponse = {
 async function run(): Promise<void> {
   try {
     const token = core.getInput("github_token")
+    const format = core.getInput("format")
+    const file = core.getInput("file")
     const subdirectory = core.getInput("subdirectory") || ""
 
     const octokit = github.getOctokit(token)
 
-    const data = fs.readFileSync(core.getInput("file"), "utf8")
-    const decodedData = JSON.parse(data)
-
-    // changedFiles on currently supported for PRs
+    // changedFiles only currently supported for PRs
     const changedFiles = github.context.eventName === "pull_request" ? await getChangedFiles(octokit) : {}
 
-    const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } = parse(
-      decodedData,
-      changedFiles,
-      subdirectory
-    )
+    const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage, annotations } =
+      await parse(format, file, changedFiles, subdirectory)
 
     const payload = {
       covered,
@@ -60,7 +55,7 @@ async function run(): Promise<void> {
       description: res.result.message,
     })
 
-    if (github.context.eventName === "pull_request" && relevantForPatch > 0) {
+    if (annotations.length > 0 || (relevantForPatch && relevantForPatch > 0)) {
       const { data: checkRun } = await octokit.rest.checks.create({
         ...github.context.repo,
         status: "in_progress",
@@ -80,7 +75,7 @@ async function run(): Promise<void> {
           check_run_id: checkRun.id,
           output: {
             title: "coverbot coverage report",
-            summary: `Overall: ${res.result.message}\nPatch: ${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
+            summary: `Overall: ${res.result.message}`,
             annotations: chunk,
           },
         })
@@ -92,13 +87,15 @@ async function run(): Promise<void> {
         conclusion: res.result.state,
       })
 
-      octokit.rest.repos.createCommitStatus({
-        ...github.context.repo,
-        sha: res.result.sha,
-        state: coveredForPatch === relevantForPatch ? "success" : "failure",
-        context: "coverbot (patch)",
-        description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
-      })
+      if (relevantForPatch && relevantForPatch > 0) {
+        octokit.rest.repos.createCommitStatus({
+          ...github.context.repo,
+          sha: res.result.sha,
+          state: coveredForPatch === relevantForPatch ? "success" : "failure",
+          context: "coverbot (patch)",
+          description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
+        })
+      }
     }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)

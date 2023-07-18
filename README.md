@@ -32,8 +32,9 @@ jobs:
     # ...
 
     - name: Check Code Coverage
-      uses: coverbot-io/coverbot-action@v1
+      uses: coverbot-io/coverbot-action@v2
       with:
+        format: elixir
         file: cover/excoveralls.json
         coverbot_api_key: ${{ secrets.COVERBOT_API_KEY}}
         github_token: ${{ secrets.GITHUB_TOKEN}}
@@ -41,7 +42,9 @@ jobs:
 
 ## Inputs
 
--   `file`: (Required) A json file containing code coverage results (currently only the excoveralls format is supported).
+-   `format`: (Required) file format (currently only `elixir` and `go` are supported).
+
+-   `file`: (Required) A json file containing code coverage results.
 
 -   `coverbot_api_key`: (Required) You will need to create an API key on 
     https://app.coverbot.io/api-keys and save it as a secret in GitHub 

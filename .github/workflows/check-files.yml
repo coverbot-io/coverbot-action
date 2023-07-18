@@ -10,6 +10,19 @@ jobs:
 
       - uses: ./
         with:
+          format: elixir
           file: example_coverage_files/excoveralls.json
+          coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  go:
+    name: go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          format: go
+          file: example_coverage_files/go.out
           coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
