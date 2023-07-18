@@ -32,7 +32,7 @@ jobs:
     # ...
 
     - name: Check Code Coverage
-      uses: coverbot-io/coverbot-action@v1
+      uses: coverbot-io/coverbot-action@v2
       with:
         format: elixir
         file: cover/excoveralls.json

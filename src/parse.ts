@@ -25,8 +25,6 @@ export const parse = (
 ): Promise<Result> => {
   let parseFunction
 
-  console.log(format)
-
   switch (format) {
     case "elixir":
       parseFunction = require("./parse/elixir").parse

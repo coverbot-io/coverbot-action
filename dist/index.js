@@ -11834,7 +11834,6 @@ exports.parse = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const parse = (format, file, changedFiles, subdirectory) => {
     let parseFunction;
-    console.log(format);
     switch (format) {
         case "elixir":
             parseFunction = (__nccwpck_require__(2305).parse);
