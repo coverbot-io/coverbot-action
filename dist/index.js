@@ -6635,6 +6635,139 @@ exports.isPlainObject = isPlainObject;
 
 /***/ }),
 
+/***/ 7454:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/*
+Copyright (c) 2012, Yahoo! Inc. All rights reserved.
+Code licensed under the BSD License:
+http://yuilibrary.com/license/
+*/
+
+var fs = __nccwpck_require__(7147),
+    path = __nccwpck_require__(1017);
+
+/* istanbul ignore next */
+var exists = fs.exists || path.exists;
+
+var walkFile = function(str, cb) {
+    var data = [], item;
+
+    [ 'end_of_record' ].concat(str.split('\n')).forEach(function(line) {
+        line = line.trim();
+        var allparts = line.split(':'),
+            parts = [allparts.shift(), allparts.join(':')],
+            lines, fn;
+
+        switch (parts[0].toUpperCase()) {
+            case 'TN':
+                item.title = parts[1].trim();
+                break;
+            case 'SF':
+                item.file = parts.slice(1).join(':').trim();
+                break;
+            case 'FNF':
+                item.functions.found = Number(parts[1].trim());
+                break;
+            case 'FNH':
+                item.functions.hit = Number(parts[1].trim());
+                break;
+            case 'LF':
+                item.lines.found = Number(parts[1].trim());
+                break;
+            case 'LH':
+                item.lines.hit = Number(parts[1].trim());
+                break;
+            case 'DA':
+                lines = parts[1].split(',');
+                item.lines.details.push({
+                    line: Number(lines[0]),
+                    hit: Number(lines[1])
+                });
+                break;
+            case 'FN':
+                fn = parts[1].split(',');
+                item.functions.details.push({
+                    name: fn[1],
+                    line: Number(fn[0])
+                });
+                break;
+            case 'FNDA':
+                fn = parts[1].split(',');
+                item.functions.details.some(function(i, k) {
+                    if (i.name === fn[1] && i.hit === undefined) {
+                        item.functions.details[k].hit = Number(fn[0]);
+                        return true;
+                    }
+                });
+                break;
+            case 'BRDA':
+                fn = parts[1].split(',');
+                item.branches.details.push({
+                    line: Number(fn[0]),
+                    block: Number(fn[1]),
+                    branch: Number(fn[2]),
+                    taken: ((fn[3] === '-') ? 0 : Number(fn[3]))
+                });
+                break;
+            case 'BRF':
+                item.branches.found = Number(parts[1]);
+                break;
+            case 'BRH':
+                item.branches.hit = Number(parts[1]);
+                break;
+        }
+
+        if (line.indexOf('end_of_record') > -1) {
+            data.push(item);
+            item = {
+              lines: {
+                  found: 0,
+                  hit: 0,
+                  details: []
+              },
+              functions: {
+                  hit: 0,
+                  found: 0,
+                  details: []
+              },
+              branches: {
+                hit: 0,
+                found: 0,
+                details: []
+              }
+            };
+        }
+    });
+
+    data.shift();
+
+    if (data.length) {
+        cb(null, data);
+    } else {
+        cb('Failed to parse string');
+    }
+};
+
+var parse = function(file, cb) {
+    exists(file, function(x) {
+        if (!x) {
+            return walkFile(file, cb);
+        }
+        fs.readFile(file, 'utf8', function(err, str) {
+            walkFile(str, cb);
+        });
+    });
+
+};
+
+
+module.exports = parse;
+module.exports.source = walkFile;
+
+
+/***/ }),
+
 /***/ 467:
 /***/ ((module, exports, __nccwpck_require__) => {
 
@@ -11844,6 +11977,9 @@ const parse = (format, file, changedFiles, subdirectory) => {
         case "go":
             parseFunction = (__nccwpck_require__(6962).parse);
             break;
+        case "lcov":
+            parseFunction = (__nccwpck_require__(8999).parse);
+            break;
         default:
             core.setFailed("Unsupported format: " + format);
             return Promise.reject();
@@ -12051,6 +12187,111 @@ const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, vo
         percentage,
         coveredForPatch,
         relevantForPatch,
+        patchPercentage,
+        annotations,
+    };
+});
+exports.parse = parse;
+
+
+/***/ }),
+
+/***/ 8999:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parse = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const util_1 = __importDefault(__nccwpck_require__(3837));
+const decimal_js_light_1 = __importDefault(__nccwpck_require__(5078));
+const lcov_parse_1 = __importDefault(__nccwpck_require__(7454));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = fs_1.default.readFileSync(coverageFile, "utf8");
+    const lcovParsePromise = util_1.default.promisify(lcov_parse_1.default);
+    const decodedData = yield lcovParsePromise(data);
+    if (!decodedData)
+        return core.setFailed("Failed to parse file");
+    const parseResult = decodedData
+        .filter(file => !file.file.includes(".cargo"))
+        .reduce((acc, file) => {
+        const fileName = path_1.default.join(subdirectory, file.file);
+        const coveredForPatch = fileName in changedFiles ? file.lines.hit : 0;
+        const relevantForPatch = fileName in changedFiles ? file.lines.found : 0;
+        const annotations = fileName in changedFiles
+            ? file.lines.details
+                .filter(l => l.hit === 0)
+                .map(l => ({
+                path: fileName,
+                start_line: l.line,
+                end_line: l.line,
+                annotation_level: "warning",
+                message: "Line is not covered by tests.",
+            }))
+            : [];
+        return {
+            covered: file.lines.hit + acc.covered,
+            coveredForPatch: coveredForPatch,
+            relevant: file.lines.found + acc.relevant,
+            relevantForPatch: relevantForPatch,
+            annotations: annotations.concat(acc.annotations),
+        };
+    }, {
+        covered: 0,
+        coveredForPatch: 0,
+        relevant: 0,
+        relevantForPatch: 0,
+        annotations: [],
+    });
+    const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseResult;
+    const percentage = new decimal_js_light_1.default(covered).dividedBy(new decimal_js_light_1.default(relevant)).times(100).toFixed(2);
+    const patchPercentage = relevantForPatch > 0
+        ? new decimal_js_light_1.default(coveredForPatch).dividedBy(new decimal_js_light_1.default(relevantForPatch)).times(100).toFixed(2)
+        : "0.00";
+    return {
+        covered,
+        coveredForPatch,
+        relevant,
+        relevantForPatch,
+        percentage,
         patchPercentage,
         annotations,
     };
