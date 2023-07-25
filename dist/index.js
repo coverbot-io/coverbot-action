@@ -12269,9 +12269,9 @@ const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, vo
             : [];
         return {
             covered: file.lines.hit + acc.covered,
-            coveredForPatch: coveredForPatch,
             relevant: file.lines.found + acc.relevant,
-            relevantForPatch: relevantForPatch,
+            coveredForPatch,
+            relevantForPatch,
             annotations: annotations.concat(acc.annotations),
         };
     }, {

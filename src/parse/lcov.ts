@@ -43,9 +43,9 @@ export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => 
 
         return {
           covered: file.lines.hit + acc.covered,
-          coveredForPatch: coveredForPatch,
           relevant: file.lines.found + acc.relevant,
-          relevantForPatch: relevantForPatch,
+          coveredForPatch,
+          relevantForPatch,
           annotations: annotations.concat(acc.annotations),
         } as ParseResult
       },
