@@ -35,3 +35,21 @@ test("go", async () => {
   expect(percentage).toBe("67.58")
   expect(patchPercentage).toBe("78.38")
 })
+
+test("lcov", async () => {
+  const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage } = await parse(
+    "lcov",
+    "./example_coverage_files/lcov.info",
+    {
+      "src/events/windows_events_structs.rs": [],
+    },
+    ""
+  )
+
+  expect(covered).toBe(1787)
+  expect(coveredForPatch).toBe(44)
+  expect(relevant).toBe(2706)
+  expect(relevantForPatch).toBe(44)
+  expect(percentage).toBe("66.04")
+  expect(patchPercentage).toBe("100.00")
+})

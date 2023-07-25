@@ -26,3 +26,15 @@ jobs:
           file: example_coverage_files/go.out
           coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  lcov:
+    name: lcov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          format: lcov
+          file: example_coverage_files/lcov.info
+          coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}

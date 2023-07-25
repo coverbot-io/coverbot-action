@@ -15,7 +15,7 @@ export type Result = ParseResult & {
   patchPercentage: string
 }
 
-export type Parse = (file: string, changedFiles: ChangedFiles, subdirectory: string) => Promise<Result>
+export type Parse = (file: string, changedFiles: ChangedFiles, subdirectory: string) => Promise<Result | void>
 
 export const parse = (
   format: string,
@@ -31,6 +31,9 @@ export const parse = (
       break
     case "go":
       parseFunction = require("./parse/go").parse
+      break
+    case "lcov":
+      parseFunction = require("./parse/lcov").parse
       break
     default:
       core.setFailed("Unsupported format: " + format)
