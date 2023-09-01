@@ -95,7 +95,7 @@ async function run(): Promise<void> {
         octokit.rest.repos.createCommitStatus({
           ...github.context.repo,
           sha: res.result.sha,
-          state: coveredForPatch === relevantForPatch ? "success" : "failure",
+          state: Number(patchPercentage) >= Number(percentage) ? "success" : "failure",
           context: "coverbot (patch)",
           description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)`,
         })

@@ -30,6 +30,6 @@ export const getChangedFiles = async (
 
       const changedLines = patch.split("\n").filter(line => line.startsWith("+"))
 
-      return { ...acc, [file.filename]: changedLines } as ChangedFiles
+      return { ...(await acc), [file.filename]: changedLines } as ChangedFiles
     }, {})
 }
