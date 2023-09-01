@@ -11824,7 +11824,7 @@ const getChangedFiles = (octokit) => __awaiter(void 0, void 0, void 0, function*
             patch = atob(encodedContent);
         }
         const changedLines = patch.split("\n").filter(line => line.startsWith("+"));
-        return Object.assign(Object.assign({}, acc), { [file.filename]: changedLines });
+        return Object.assign(Object.assign({}, (yield acc)), { [file.filename]: changedLines });
     }), {});
 });
 exports.getChangedFiles = getChangedFiles;
@@ -11922,7 +11922,7 @@ function run() {
                 }
                 octokit.rest.checks.update(Object.assign(Object.assign({}, github.context.repo), { check_run_id: checkRun.id, conclusion: res.result.state }));
                 if (relevantForPatch && relevantForPatch > 0) {
-                    octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: coveredForPatch === relevantForPatch ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
+                    octokit.rest.repos.createCommitStatus(Object.assign(Object.assign({}, github.context.repo), { sha: res.result.sha, state: Number(patchPercentage) >= Number(percentage) ? "success" : "failure", context: "coverbot (patch)", description: `${coveredForPatch} lines covered out of ${relevantForPatch} (${patchPercentage}%)` }));
                 }
             }
         }
