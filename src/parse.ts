@@ -29,6 +29,9 @@ export const parse = (
     case "elixir":
       parseFunction = require("./parse/elixir").parse
       break
+    case "ruby":
+      parseFunction = require("./parse/ruby").parse
+      break
     case "go":
       parseFunction = require("./parse/go").parse
       break
