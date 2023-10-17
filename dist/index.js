@@ -11974,6 +11974,9 @@ const parse = (format, file, changedFiles, subdirectory) => {
         case "elixir":
             parseFunction = (__nccwpck_require__(2305).parse);
             break;
+        case "ruby":
+            parseFunction = (__nccwpck_require__(2274).parse);
+            break;
         case "go":
             parseFunction = (__nccwpck_require__(6962).parse);
             break;
@@ -12297,6 +12300,95 @@ const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, vo
     };
 });
 exports.parse = parse;
+
+
+/***/ }),
+
+/***/ 2274:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parse = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const decimal_js_light_1 = __importDefault(__nccwpck_require__(5078));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const parse = (coverageFile, changedFiles, subdirectory) => __awaiter(void 0, void 0, void 0, function* () {
+    const data = fs_1.default.readFileSync(coverageFile, "utf8");
+    const decodedData = JSON.parse(data);
+    const parseResult = Object.entries(decodedData.coverage).reduce((acc, file) => {
+        const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseSourceFile(file, changedFiles, subdirectory);
+        return {
+            covered: covered + acc.covered,
+            coveredForPatch: coveredForPatch + acc.coveredForPatch,
+            relevant: relevant + acc.relevant,
+            relevantForPatch: relevantForPatch + acc.relevantForPatch,
+            annotations: annotations.concat(acc.annotations),
+        };
+    }, {
+        covered: 0,
+        coveredForPatch: 0,
+        relevant: 0,
+        relevantForPatch: 0,
+        annotations: [],
+    });
+    const { covered, coveredForPatch, relevant, relevantForPatch, annotations } = parseResult;
+    const percentage = new decimal_js_light_1.default(covered).dividedBy(new decimal_js_light_1.default(relevant)).times(100).toFixed(2);
+    const patchPercentage = relevantForPatch > 0
+        ? new decimal_js_light_1.default(coveredForPatch).dividedBy(new decimal_js_light_1.default(relevantForPatch)).times(100).toFixed(2)
+        : "0.00";
+    return {
+        covered,
+        coveredForPatch,
+        relevant,
+        relevantForPatch,
+        percentage,
+        patchPercentage,
+        annotations,
+    };
+});
+exports.parse = parse;
+const parseSourceFile = ([sourceFile, value], changedFiles, subdirectory) => {
+    const sourceLines = value.lines.map((coverage, i) => {
+        return { coverage, lineNumber: i + 1 };
+    });
+    const fileName = path_1.default.join(subdirectory, sourceFile).substring(1);
+    const relevant = sourceLines.filter(l => l.coverage !== null);
+    const relevantForPatch = fileName in changedFiles ? relevant : [];
+    const covered = relevant.filter(l => l.coverage !== null && l.coverage > 0);
+    const coveredForPatch = relevantForPatch.filter(l => l.coverage !== null && l.coverage > 0);
+    const annotations = relevantForPatch
+        .filter(l => l.coverage === 0)
+        .map(line => {
+        return {
+            path: fileName,
+            start_line: line.lineNumber,
+            end_line: line.lineNumber,
+            annotation_level: "warning",
+            message: "Line is not covered by tests.",
+        };
+    });
+    return {
+        covered: covered.length,
+        coveredForPatch: coveredForPatch.length,
+        relevant: relevant.length,
+        relevantForPatch: relevantForPatch.length,
+        annotations,
+    };
+};
 
 
 /***/ }),

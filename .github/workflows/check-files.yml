@@ -38,3 +38,15 @@ jobs:
           file: example_coverage_files/lcov.info
           coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  ruby:
+    name: ruby
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+        with:
+          format: ruby
+          file: example_coverage_files/simplecov.json
+          coverbot_api_key: ${{ secrets.COVERBOT_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}

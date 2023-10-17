@@ -53,3 +53,21 @@ test("lcov", async () => {
   expect(percentage).toBe("66.04")
   expect(patchPercentage).toBe("100.00")
 })
+
+test("ruby - simplecov", async () => {
+  const { covered, coveredForPatch, relevant, relevantForPatch, percentage, patchPercentage } = await parse(
+    "ruby",
+    "./example_coverage_files/simplecov.json",
+    {
+      "app/builders/account_builder.rb": [],
+    },
+    ""
+  )
+
+  expect(covered).toBe(23700)
+  expect(coveredForPatch).toBe(10)
+  expect(relevant).toBe(30823)
+  expect(relevantForPatch).toBe(10)
+  expect(percentage).toBe("76.89")
+  expect(patchPercentage).toBe("100.00")
+})
