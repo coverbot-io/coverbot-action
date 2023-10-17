@@ -6,11 +6,11 @@ import path from "path"
 import { ChangedFiles } from "../changed-files"
 import { Parse, ParseResult } from "../parse"
 
-type SourceFile = [string, { lines: (number | null)[]; }]
+type SourceFile = [string, { lines: (number | null)[] }]
 
 type Data = {
   coverage: {
-    [key: string]: {lines: (number | null)[] }
+    [key: string]: { lines: (number | null)[] }
   }
 }
 
@@ -63,11 +63,15 @@ export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => 
   }
 }
 
-const parseSourceFile = ([sourceFile, value]: SourceFile, changedFiles: ChangedFiles, subdirectory: string): ParseResult => {
+const parseSourceFile = (
+  [sourceFile, value]: SourceFile,
+  changedFiles: ChangedFiles,
+  subdirectory: string
+): ParseResult => {
   const sourceLines = value.lines.map((coverage, i) => {
     return { coverage, lineNumber: i + 1 }
   })
-  
+
   const fileName = path.join(subdirectory, sourceFile).substring(1)
 
   const relevant = sourceLines.filter(l => l.coverage !== null)
