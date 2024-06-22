@@ -6,7 +6,7 @@ jobs:
     name: excoveralls.json
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: ./
         with:
@@ -19,7 +19,7 @@ jobs:
     name: go
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./
         with:
           format: go
@@ -31,7 +31,7 @@ jobs:
     name: lcov
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./
         with:
           format: lcov
@@ -43,7 +43,7 @@ jobs:
     name: ruby
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./
         with:
           format: ruby
