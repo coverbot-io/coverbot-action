@@ -27,17 +27,17 @@ export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => 
         const annotations =
           fileName in changedFiles
             ? file.lines.details
-              .filter(l => l.hit === 0)
-              .map(
-                l =>
-                  ({
-                    path: fileName,
-                    start_line: l.line,
-                    end_line: l.line,
-                    annotation_level: "warning",
-                    message: "Line is not covered by tests.",
-                  }) as Annotation
-              )
+                .filter(l => l.hit === 0)
+                .map(
+                  l =>
+                    ({
+                      path: fileName,
+                      start_line: l.line,
+                      end_line: l.line,
+                      annotation_level: "warning",
+                      message: "Line is not covered by tests.",
+                    }) as Annotation
+                )
             : []
 
         return {
