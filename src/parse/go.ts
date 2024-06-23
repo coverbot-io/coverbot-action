@@ -1,9 +1,8 @@
-import { AnnotationProperties } from "@actions/core"
 import fs from "fs"
 import readline from "readline"
 
 import Decimal from "decimal.js-light"
-import { Parse, ParseResult } from "../parse"
+import { Annotation, Parse, ParseResult } from "../parse"
 import path from "path"
 
 export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => {
@@ -49,7 +48,7 @@ export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => 
                 end_line: parseInt(end),
                 annotation_level: "warning",
                 message: "Line is not covered by tests.",
-              } as AnnotationProperties,
+              } as Annotation,
             ]
           : []
 

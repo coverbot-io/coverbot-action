@@ -1,9 +1,8 @@
 import * as core from "@actions/core"
-import { AnnotationProperties } from "@actions/core"
 import fs from "fs"
 import util from "util"
 import Decimal from "decimal.js-light"
-import { Parse, ParseResult } from "../parse"
+import { Annotation, Parse, ParseResult } from "../parse"
 import lcovParse, { LcovFile } from "lcov-parse"
 import path from "path"
 
@@ -37,7 +36,7 @@ export const parse: Parse = async (coverageFile, changedFiles, subdirectory) => 
                       end_line: l.line,
                       annotation_level: "warning",
                       message: "Line is not covered by tests.",
-                    } as AnnotationProperties)
+                    }) as Annotation
                 )
             : []
 

@@ -1,5 +1,4 @@
 import * as core from "@actions/core"
-import { AnnotationProperties } from "@actions/core"
 import { ChangedFiles } from "./changed-files"
 
 export type ParseResult = {
@@ -7,7 +6,19 @@ export type ParseResult = {
   coveredForPatch: number
   relevant: number
   relevantForPatch: number
-  annotations: AnnotationProperties[]
+  annotations: Annotation[]
+}
+
+export type Annotation = {
+  path: string
+  start_line: number
+  end_line: number
+  start_column?: number
+  end_column?: number
+  annotation_level: "notice" | "warning" | "failure"
+  message: string
+  title?: string
+  raw_details?: string
 }
 
 export type Result = ParseResult & {

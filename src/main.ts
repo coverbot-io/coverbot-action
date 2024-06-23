@@ -7,7 +7,7 @@ import { parse } from "./parse"
 
 type CoverageResponse = {
   sha: string
-  state: "pending" | "error" | "failure" | "success"
+  state: "failure" | "success"
   message: string
 }
 
