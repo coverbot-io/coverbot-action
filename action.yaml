@@ -1,33 +1,33 @@
 name: Coverbot | Code Coverage
 description: Quickly determine code coverage.
 
-branding: 
+branding:
   icon: check-circle
   color: blue
 
 inputs:
-  format: 
+  format:
     description: file format (currently only `elixir` and `go` are supported)
     required: true
-  file: 
+  file:
     description: location of json file
     required: true
-  coverbot_api_key: 
+  coverbot_api_key:
     description: Coverbot Token
     required: true
-  github_token: 
+  github_token:
     description: GitHub Token
     required: true
-  subdirectory: 
+  subdirectory:
     description: If your app is in a subdirectory, specify it here
     required: false
 outputs:
-  covered: 
+  covered:
     description: Number of lines covered
-  relevant: 
+  relevant:
     description: Number of lines considered relevant
-  percentage: 
+  percentage:
     description: The coverage percentage
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'

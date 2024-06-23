@@ -1,10 +1,9 @@
-import { AnnotationProperties } from "@actions/core"
 import fs from "fs"
 
 import Decimal from "decimal.js-light"
 import path from "path"
 import { ChangedFiles } from "../changed-files"
-import { Parse, ParseResult } from "../parse"
+import { Annotation, Parse, ParseResult } from "../parse"
 
 type SourceFile = [string, { lines: (number | null)[] }]
 
@@ -89,7 +88,7 @@ const parseSourceFile = (
         end_line: line.lineNumber,
         annotation_level: "warning",
         message: "Line is not covered by tests.",
-      } as AnnotationProperties
+      } as Annotation
     })
 
   return {
